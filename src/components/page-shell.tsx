@@ -3,6 +3,7 @@ import { CircleHelp, TriangleAlert } from "lucide-react"
 
 import logo from "@/assets/logo.png"
 import { Button } from "@/components/ui/button"
+import { APP_NAME } from "@/lib/booking"
 
 /**
  * 画面共通の枠、見出し、フッターを表示する。
@@ -37,7 +38,7 @@ export function PageShell({
           onClick={onBrandClick}
         >
           <img src={logo} alt="" className="block h-[calc(1em+14px)] w-auto shrink-0 self-center" />
-          <span className="leading-none self-center translate-y-[3px]">Slotly</span>
+          <span className="leading-none self-center translate-y-[3px]">{APP_NAME}</span>
         </a>
         <p className="min-w-0 flex-1 text-sm text-muted-foreground">{lede}</p>
         <Button type="button" variant="outline" size="sm" disabled={submitting} onClick={onHelp}>

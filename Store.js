@@ -29,7 +29,7 @@ var BOOKING_HEADERS = [
  */
 function openDataSpreadsheet_() {
   var id = getScriptProps_().getProperty(SHEET_ID_PROP);
-  if (!id) throw new Error('予約データシートがありません。setupSlotly を実行してください。');
+  if (!id) throw new Error('予約データシートがありません。setupTimePick を実行してください。');
   return SpreadsheetApp.openById(id);
 }
 

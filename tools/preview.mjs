@@ -24,7 +24,7 @@ const WEB_APP = path.join(ROOT, 'WebApp.html');
  */
 function pageTitle(page) {
   const suffix = { done: '予約確定', cancel: 'キャンセル', admin: '管理' }[page] || '予約';
-  return 'Slotly - ' + suffix;
+  return 'TimePick - ' + suffix;
 }
 
 /**
@@ -59,7 +59,7 @@ const server = http.createServer((req, res) => {
   const token = url.searchParams.get('token') || '';
   if (page === 'ics') {
     res.writeHead(200, { 'Content-Type': 'text/calendar; charset=utf-8' });
-    res.end('BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Slotly//JP\r\nEND:VCALENDAR\r\n');
+    res.end('BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//TimePick//JP\r\nEND:VCALENDAR\r\n');
     return;
   }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -67,5 +67,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log('Slotly preview http://127.0.0.1:' + PORT);
+  console.log('TimePick preview http://127.0.0.1:' + PORT);
 });

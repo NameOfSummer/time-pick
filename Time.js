@@ -10,6 +10,10 @@ var DURATION_MAX = 240;
  * 所要時間の刻み（分）。
  */
 var DURATION_STEP = 15;
+/**
+ * 何日先まで予約できるかの上限（日）。1年。
+ */
+var MAX_DAYS_AHEAD = 365;
 
 /**
  * 選べる所要時間の一覧を返す。

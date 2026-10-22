@@ -1,3 +1,4 @@
+import { APP_NAME, MAX_DAYS_AHEAD } from "@/lib/booking"
 import { gasRun } from "@/lib/gas-api"
 import type { AdminSettings, CreateBookingPayload, HourRange, PublicBooking } from "@/lib/types"
 
@@ -105,7 +106,7 @@ export function installPreviewApi(): void {
 
   let store: PreviewStore
   try {
-    store = JSON.parse(sessionStorage.getItem("slotly-preview") || '{"busy":{},"bookings":{}}')
+    store = JSON.parse(sessionStorage.getItem("timepick-preview") || '{"busy":{},"bookings":{}}')
   } catch {
     store = { busy: {}, bookings: {}, settings: null }
   }
@@ -127,7 +128,7 @@ export function installPreviewApi(): void {
 
   const persist = () => {
     sessionStorage.setItem(
-      "slotly-preview",
+      "timepick-preview",
       JSON.stringify({ busy, bookings, settings: previewSettings })
     )
   }
@@ -137,7 +138,11 @@ export function installPreviewApi(): void {
     const out: string[] = []
     const now = Date.now()
     const weekHours = previewSettings.weekHours || defaultWeekHours
-    for (let i = 0; i < 28; i += 1) {
+    const days = Math.min(
+      MAX_DAYS_AHEAD,
+      Math.max(1, Number(previewSettings.maxDaysAhead) || 28)
+    )
+    for (let i = 0; i < days; i += 1) {
       const seed = new Date(now + i * 86400000)
       const ymd = new Intl.DateTimeFormat("en-CA", {
         timeZone: tz,
@@ -179,7 +184,7 @@ export function installPreviewApi(): void {
   const impl = {
     getPublicConfig: () => ({
       configured: true,
-      appName: "Slotly",
+      appName: APP_NAME,
       hostName: typeof previewSettings.hostName === "string" ? previewSettings.hostName : "デモ",
       timezone: "Asia/Tokyo",
       durations: Array.from({ length: 16 }, (_, index) => 15 + index * 15),
@@ -222,7 +227,7 @@ export function installPreviewApi(): void {
       const row: PublicBooking = {
         token,
         status: "confirmed",
-        title: eventTitle || `${payload.name} さんとのミーティング（Slotly）`,
+        title: eventTitle || `${payload.name} さんとのミーティング（${APP_NAME}）`,
         guestName: payload.name,
         guestEmail: payload.email,
         startIso: start.toISOString(),
@@ -261,7 +266,10 @@ export function installPreviewApi(): void {
         { id: "work", name: "仕事", primary: false },
       ],
     }),
-    adminSaveSettings: (_key: string, patch: AdminSettings) => {
+    adminSaveSettings: (_key: string, patch: AdminSettings | string) => {
+      if (typeof patch === "string") {
+        patch = JSON.parse(patch) as AdminSettings
+      }
       if (patch?.writeCalendarId) {
         const calIds: Record<string, boolean> = { primary: true, private: true, work: true }
         if (!calIds[patch.writeCalendarId]) {
@@ -295,6 +303,10 @@ export function installPreviewApi(): void {
         }
       }
       previewSettings = { ...previewSettings, ...patch }
+      previewSettings.maxDaysAhead = Math.min(
+        MAX_DAYS_AHEAD,
+        Math.max(1, Number(previewSettings.maxDaysAhead) || 28)
+      )
       if (previewSettings.allowedEmailDomains != null) {
         const raw = previewSettings.allowedEmailDomains
         const text = Array.isArray(raw) ? raw.join("\n") : String(raw || "")

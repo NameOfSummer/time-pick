@@ -46,7 +46,7 @@ export function FieldLabel({
           <span
             id={bubbleId}
             role="tooltip"
-            className="pointer-events-none invisible absolute top-full left-0 z-50 mt-1 w-max max-w-[calc(100vw-2rem)] rounded-lg border bg-popover px-3 py-2 text-xs leading-relaxed whitespace-nowrap text-popover-foreground opacity-0 shadow-md peer-hover:visible peer-hover:opacity-100 peer-focus-visible:visible peer-focus-visible:opacity-100"
+            className="pointer-events-none invisible absolute top-full left-0 z-50 mt-1 w-max max-w-[40vw] rounded-lg border bg-popover px-3 py-2 text-left text-xs leading-relaxed break-words whitespace-pre-line text-popover-foreground opacity-0 shadow-md peer-hover:visible peer-hover:opacity-100 peer-focus-visible:visible peer-focus-visible:opacity-100"
           >
             {hint}
           </span>

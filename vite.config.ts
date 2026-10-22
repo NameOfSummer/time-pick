@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
           rollupOptions: {
             output: {
               format: "iife",
-              name: "slotly",
+              name: "timepick",
               inlineDynamicImports: true,
             },
           },

@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
  */
 const claspPackage = '@google/clasp@3.4.1';
 /**
- * リポジトリ直下に一時的に置く clasp の設定。Slotly の GAS は直下にある。
+ * リポジトリ直下に一時的に置く clasp の設定。TimePick の GAS は直下にある。
  */
 const projectFileName = '.clasp.deploy.json';
 
@@ -156,7 +156,7 @@ export function pickDeploymentId(deployments) {
  * @returns {void}
  */
 function deployTarget(target, description) {
-  const directory = mkdtempSync(join(tmpdir(), 'slotly-deploy-'));
+  const directory = mkdtempSync(join(tmpdir(), 'timepick-deploy-'));
   const authFile = join(directory, 'clasprc.json');
   const projectFile = join(process.cwd(), projectFileName);
   try {

@@ -175,7 +175,7 @@ function publicBookingView_(booking, urls) {
  * @returns タイトル。
  */
 function buildEventTitle_(guestName) {
-  return guestName + ' さんとのミーティング（Slotly）';
+  return guestName + ' さんとのミーティング（' + APP_NAME + '）';
 }
 
 /**
@@ -241,7 +241,7 @@ function serveIcs_(token) {
   }
   return ContentService.createTextOutput(buildIcs_(found.data))
     .setMimeType(ContentService.MimeType.ICAL)
-    .downloadAsFile('slotly.ics');
+    .downloadAsFile('timepick.ics');
 }
 
 /**
@@ -257,11 +257,11 @@ function buildIcs_(booking) {
   var lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Slotly//JP',
+    'PRODID:-//TimePick//JP',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    'UID:' + booking.token + '@slotly',
+    'UID:' + booking.token + '@timepick',
     'DTSTAMP:' + formatIcsUtc_(new Date()),
     'DTSTART:' + formatIcsUtc_(start),
     'DTEND:' + formatIcsUtc_(end),
@@ -332,7 +332,7 @@ function sendGuestEmail_(booking, urls) {
   var when = formatRangeJa_(booking.startIso, booking.endIso);
   var html = [
     '<p>' + escapeHtml_(booking.guestName) + ' さん</p>',
-    '<p>Slotly で予約が確定しました。</p>',
+    '<p>' + escapeHtml_(APP_NAME) + ' で予約が確定しました。</p>',
     bookingSummaryHtml_(booking, when),
     urls.icsUrl ? '<p><a href="' + escapeHtml_(urls.icsUrl) + '">その他のカレンダー用に ICS ファイルをダウンロード</a></p>' : '',
     urls.cancelUrl ? '<p><a href="' + escapeHtml_(urls.cancelUrl) + '">この予約をキャンセルする</a></p>' : '',
@@ -340,7 +340,7 @@ function sendGuestEmail_(booking, urls) {
   try {
     MailApp.sendEmail({
       to: booking.guestEmail,
-      subject: '【Slotly】予約が確定しました ' + when,
+      subject: '【' + APP_NAME + '】予約が確定しました ' + when,
       htmlBody: html,
     });
   } catch (err) {
@@ -358,7 +358,7 @@ function sendCancelEmail_(booking) {
   try {
     MailApp.sendEmail({
       to: booking.guestEmail,
-      subject: '【Slotly】予約をキャンセルしました ' + when,
+      subject: '【' + APP_NAME + '】予約をキャンセルしました ' + when,
       htmlBody:
         '<p>' + escapeHtml_(booking.guestName) + ' さん</p>' +
         '<p>次の予約をキャンセルしました。</p>' +

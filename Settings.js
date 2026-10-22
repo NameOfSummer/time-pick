@@ -60,13 +60,35 @@ function getSettings_() {
 }
 
 /**
+ * 画面から来た設定をオブジェクトにする。
+ * @param patch 設定。JSON 文字列でもよい。
+ * @returns 設定オブジェクト。
+ */
+function parseClientPatch_(patch) {
+  if (patch == null || patch === '') return {};
+  if (typeof patch === 'string') {
+    try {
+      var parsed = JSON.parse(patch);
+      if (!parsed || typeof parsed !== 'object' || Object.prototype.toString.call(parsed) === '[object Array]') {
+        throw new Error('設定の内容が正しくありません。');
+      }
+      return parsed;
+    } catch (err) {
+      if (err && err.message && err.message.indexOf('設定の内容') === 0) throw err;
+      throw new Error('設定の内容が正しくありません。');
+    }
+  }
+  return patch;
+}
+
+/**
  * 設定を保存する。
  * @param patch 上書きする内容。
  * @returns 保存後の設定。
  */
 function saveSettings_(patch) {
   var current = getSettings_();
-  var next = Object.assign({}, current, patch || {});
+  var next = Object.assign({}, current, parseClientPatch_(patch));
   if (!next.writeCalendarId) {
     throw new Error('予定を書き込むカレンダーを選んでください。');
   }
@@ -76,7 +98,7 @@ function saveSettings_(patch) {
   next.busyCalendarIds = assertCalendarsExist_(next.writeCalendarId, next.busyCalendarIds);
   next.bufferMin = Math.max(0, Number(next.bufferMin) || 0);
   next.minNoticeMin = Math.max(0, Number(next.minNoticeMin) || 0);
-  next.maxDaysAhead = Math.min(90, Math.max(1, Number(next.maxDaysAhead) || 28));
+  next.maxDaysAhead = Math.min(MAX_DAYS_AHEAD, Math.max(1, Number(next.maxDaysAhead) || 28));
   next.timezone = next.timezone || 'Asia/Tokyo';
   next.allowedEmailDomains = normalizeEmailDomains_(next.allowedEmailDomains);
   assertWeekHoursValid_(next.weekHours);
@@ -94,7 +116,7 @@ function saveSettings_(patch) {
 function assertAdminKey_(key) {
   var expected = getScriptProps_().getProperty(ADMIN_KEY_PROP);
   if (!expected || String(key || '') !== expected) {
-    throw new Error('管理キーが正しくありません。setupSlotly をエディタから実行してください。');
+    throw new Error('管理キーが正しくありません。setupTimePick をエディタから実行してください。');
   }
 }
 
@@ -107,7 +129,7 @@ function ensureConfigured_() {
   var sheetId = getScriptProps_().getProperty(SHEET_ID_PROP);
   var adminKey = getScriptProps_().getProperty(ADMIN_KEY_PROP);
   if (!sheetId || !adminKey || !settings.writeCalendarId) {
-    throw new Error('まだ準備できていません。Apps Script エディタで setupSlotly を実行してください。');
+    throw new Error('まだ準備できていません。Apps Script エディタで setupTimePick を実行してください。');
   }
 }
 
@@ -133,7 +155,7 @@ function initializeSlotly_() {
     }
   }
   if (!ss) {
-    ss = SpreadsheetApp.create('Slotly 予約データ');
+    ss = SpreadsheetApp.create('TimePick 予約データ');
     props.setProperty(SHEET_ID_PROP, ss.getId());
   }
   ensureBookingsSheet_(ss);

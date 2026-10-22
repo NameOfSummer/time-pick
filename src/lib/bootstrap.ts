@@ -1,3 +1,4 @@
+import { APP_NAME } from "@/lib/booking"
 import type { AppView, Bootstrap } from "@/lib/types"
 
 /**
@@ -103,5 +104,5 @@ export function navigateToBookingUrl(href: string): void {
 export function syncDocumentTitle(view: AppView): void {
   const suffix =
     view === "done" ? "予約確定" : view === "cancel" ? "キャンセル" : view === "admin" ? "管理" : "予約"
-  document.title = `Slotly - ${suffix}`
+  document.title = `${APP_NAME} - ${suffix}`
 }

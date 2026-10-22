@@ -21,7 +21,7 @@ type GasRun = {
   getBooking: (token: string) => void
   cancelBooking: (token: string) => void
   adminGetState: (key: string) => void
-  adminSaveSettings: (key: string, patch: AdminSettings) => void
+  adminSaveSettings: (key: string, patch: string) => void
 }
 
 /**
@@ -130,10 +130,11 @@ export function adminGetState(key: string): Promise<AdminState> {
 
 /**
  * 管理画面の設定を保存する。
+ * google.script.run は null を含むオブジェクトを渡せないことがあるので、JSON 文字列で送る。
  * @param key 管理キー。
  * @param patch 保存する設定。
  * @returns 保存後の設定。
  */
 export function adminSaveSettings(key: string, patch: AdminSettings): Promise<AdminSettings> {
-  return callGas((run) => run.adminSaveSettings(key, patch))
+  return callGas((run) => run.adminSaveSettings(key, JSON.stringify(patch)))
 }

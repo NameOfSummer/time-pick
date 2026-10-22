@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  APP_NAME,
   bookingMonthBounds,
   clampVisibleMonth,
   formatDuration,
@@ -463,7 +464,7 @@ export function BookPage({
               <FieldLabel
                 text="予定のタイトル（任意）"
                 htmlFor="field-eventTitle"
-                hint="カレンダーに追加されるイベントのタイトルです。空欄なら「お名前 さんとのミーティング（Slotly）」になります。"
+                hint={`カレンダーに追加されるイベントのタイトルです。空欄なら「お名前 さんとのミーティング（${APP_NAME}）」になります。`}
                 disabled={submitting}
               />
               <Input

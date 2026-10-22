@@ -1,7 +1,7 @@
 /**
  * アプリ名。
  */
-var APP_NAME = 'Slotly';
+var APP_NAME = 'TimePick';
 
 /**
  * 画面タイトルを返す。
@@ -30,21 +30,22 @@ function doGet(e) {
     return serveIcs_(token);
   }
 
-  return renderWebApp_(page, token);
+  return renderWebApp_(page, token, page === 'admin' ? e.parameter.key || '' : '');
 }
 
 /**
  * WebApp.html に画面情報を入れて返す。
  * @param page 画面。
  * @param token 予約トークン。
+ * @param adminKey 管理キー。管理画面以外は空。
  * @returns HTML。
  */
-function renderWebApp_(page, token) {
+function renderWebApp_(page, token, adminKey) {
   var title = pageTitle_(page);
   var bootstrapJson = JSON.stringify({
     page: page,
     token: token,
-    adminKey: page === 'admin' ? e.parameter.key || '' : '',
+    adminKey: adminKey || '',
     webAppUrl: webAppUrl_(),
   });
   var html = HtmlService.createHtmlOutputFromFile('WebApp')
@@ -82,14 +83,22 @@ function webAppUrl_() {
  * エディタから一度だけ実行する。管理キーと予約データシートを作る。
  * @returns 管理キーとシート情報。
  */
-function setupSlotly() {
+function setupTimePick() {
   var result = initializeSlotly_();
-  Logger.log('===== Slotly セットアップ完了 =====');
+  Logger.log('===== TimePick セットアップ完了 =====');
   Logger.log('管理キー: ' + result.adminKey);
   Logger.log('予約データ: ' + result.spreadsheetUrl);
   Logger.log('Webアプリをデプロイしたあと、次のURLで管理画面を開く:');
   Logger.log('(デプロイURL)?page=admin&key=' + result.adminKey);
   return result;
+}
+
+/**
+ * 旧名。setupTimePick と同じ。
+ * @returns 管理キーとシート情報。
+ */
+function setupSlotly() {
+  return setupTimePick();
 }
 
 /**
@@ -167,7 +176,7 @@ function adminGetState(key) {
 /**
  * 管理設定を保存する。
  * @param key 管理キー。
- * @param patch 保存する内容。
+ * @param patch 保存する内容。JSON 文字列でもよい。
  * @returns 保存後の設定。
  */
 function adminSaveSettings(key, patch) {

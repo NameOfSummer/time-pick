@@ -1,8 +1,9 @@
-import { useMemo, useState, type MouseEvent } from "react"
-import { Copy, Plus, Trash2 } from "lucide-react"
+import { useMemo, useState, type KeyboardEvent, type MouseEvent } from "react"
+import { Copy, Plus, Trash2, X } from "lucide-react"
 
 import { FieldLabel } from "@/components/field-label"
 import { ErrorBanner, PageShell, Spinner } from "@/components/page-shell"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -14,13 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import {
   adminCalendarExists,
   calendarOptionLabel,
   dayHourIssues,
   dayRanges,
   hmToMin,
+  MAX_DAYS_AHEAD,
   sortedAdminCalendars,
   suggestNextRange,
   WEEK_KEYS,
@@ -100,20 +101,20 @@ export function AdminPage({
                 <FieldLabel
                   text="許可するメールドメイン"
                   htmlFor="admin-domains"
-                  hint="空欄なら制限しません。1行に1つ、@ は不要です。例: example.com"
+                  hint={
+                    "@ は不要です。例: example.com\n（50件まで。1件ずつドメイン形式。1件の文字数上限なし）"
+                  }
                 />
-                <Textarea
+                <DomainTagsField
                   id="admin-domains"
-                  rows={3}
-                  placeholder="example.com"
-                  value={
+                  domains={
                     Array.isArray(patch.allowedEmailDomains)
-                      ? patch.allowedEmailDomains.join("\n")
+                      ? patch.allowedEmailDomains
                       : String(patch.allowedEmailDomains || "")
+                          .split(/[\s,;]+/)
+                          .filter(Boolean)
                   }
-                  onChange={(event) =>
-                    onPatch({ ...patch, allowedEmailDomains: event.target.value })
-                  }
+                  onChange={(domains) => onPatch({ ...patch, allowedEmailDomains: domains })}
                 />
               </div>
               <div>
@@ -140,21 +141,23 @@ export function AdminPage({
               <NumberField
                 id="admin-buffer"
                 label="会議前後のバッファ（分）"
-                hint="カレンダー上の予定の前後に、この分数だけ予約を入れられなくします。"
+                hint={"カレンダー上の予定の前後に、この分数だけ予約を入れられなくします。\n（0以上。上限なし）"}
                 value={patch.bufferMin}
                 onChange={(value) => onPatch({ ...patch, bufferMin: value })}
               />
               <NumberField
                 id="admin-notice"
                 label="最短何分前まで予約可"
-                hint="いまからこの分数以内の枠は予約できません。"
+                hint={"いまからこの分数以内の枠は予約できません。\n（0以上。上限なし）"}
                 value={patch.minNoticeMin}
                 onChange={(value) => onPatch({ ...patch, minNoticeMin: value })}
               />
               <NumberField
                 id="admin-ahead"
                 label="何日先まで予約可"
-                hint="今日から何日先までの空きを公開するかを決めます。"
+                hint={`今日から何日先までの空きを公開するかを決めます。\n（1〜${MAX_DAYS_AHEAD}日）`}
+                min={1}
+                max={MAX_DAYS_AHEAD}
                 value={patch.maxDaysAhead}
                 onChange={(value) => onPatch({ ...patch, maxDaysAhead: value })}
               />
@@ -241,6 +244,113 @@ export function AdminPage({
 }
 
 /**
+ * 許可ドメインの件数上限。
+ */
+const MAX_EMAIL_DOMAINS = 50
+
+/**
+ * 入力中の文言をドメインの配列にする。
+ * @param raw 入力。
+ * @returns 整えたドメイン。
+ */
+function parseDomainDraft(raw: string): string[] {
+  return raw
+    .split(/[\s,;]+/)
+    .map((part) =>
+      String(part || "")
+        .replace(/^@+/, "")
+        .replace(/\.+$/, "")
+        .trim()
+        .toLowerCase()
+    )
+    .filter(Boolean)
+}
+
+/**
+ * 許可ドメインをタグで編集する。
+ * @param props いまのドメインと更新。
+ * @returns タグ入力。
+ */
+function DomainTagsField({
+  id,
+  domains,
+  onChange,
+}: {
+  id: string
+  domains: string[]
+  onChange: (next: string[]) => void
+}) {
+  const [draft, setDraft] = useState("")
+
+  const commitDraft = () => {
+    const added = parseDomainDraft(draft)
+    if (!added.length) {
+      setDraft("")
+      return
+    }
+    const seen = new Set(domains)
+    const next = [...domains]
+    for (const domain of added) {
+      if (seen.has(domain) || next.length >= MAX_EMAIL_DOMAINS) continue
+      seen.add(domain)
+      next.push(domain)
+    }
+    onChange(next)
+    setDraft("")
+  }
+
+  const onDraftKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing || event.key === "Process") return
+    if (event.key === "Enter") {
+      event.preventDefault()
+      commitDraft()
+      return
+    }
+    if (event.key === "Backspace" && !draft && domains.length) {
+      onChange(domains.slice(0, -1))
+    }
+  }
+
+  return (
+    <div
+      className="flex min-h-20 w-full min-w-0 flex-wrap items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-2 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          const input = event.currentTarget.querySelector("input")
+          input?.focus()
+        }
+      }}
+    >
+      {domains.map((domain) => (
+        <Badge key={domain} variant="secondary" className="h-6 gap-0.5 pr-0.5">
+          {domain}
+          <button
+            type="button"
+            className="inline-flex size-4 items-center justify-center rounded-sm text-secondary-foreground/70 hover:text-secondary-foreground"
+            aria-label={`${domain}を削除`}
+            onMouseDown={(event) => {
+              event.preventDefault()
+              onChange(domains.filter((item) => item !== domain))
+            }}
+          >
+            <X className="size-3" />
+          </button>
+        </Badge>
+      ))}
+      <input
+        id={id}
+        value={draft}
+        placeholder={domains.length ? "" : "example.com"}
+        className="min-w-[8rem] flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm"
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={onDraftKeyDown}
+        onBlur={commitDraft}
+      />
+    </div>
+  )
+}
+
+/**
  * 数値設定欄を表示する。
  * @param props ラベルと値。
  * @returns 数値入力。
@@ -249,23 +359,66 @@ function NumberField({
   id,
   label,
   hint,
+  min,
+  max,
   value,
   onChange,
 }: {
   id: string
   label: string
   hint: string
+  min?: number
+  max?: number
   value: number
   onChange: (value: number) => void
 }) {
+  const shown = Number.isFinite(value) ? String(value) : ""
+  const [draft, setDraft] = useState(shown)
+  const [focused, setFocused] = useState(false)
+
+  const commit = (raw: string) => {
+    if (raw.trim() === "" || !Number.isFinite(Number(raw))) {
+      setDraft(shown)
+      return
+    }
+    let next = Number(raw)
+    if (min != null) next = Math.max(min, next)
+    if (max != null) next = Math.min(max, next)
+    onChange(next)
+    setDraft(String(next))
+  }
+
   return (
     <div>
       <FieldLabel text={label} htmlFor={id} hint={hint} />
       <Input
         id={id}
-        type="number"
-        value={Number.isFinite(value) ? value : 0}
-        onChange={(event) => onChange(Number(event.target.value))}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        value={focused ? draft : shown}
+        onFocus={() => {
+          setDraft(shown)
+          setFocused(true)
+        }}
+        onChange={(event) => {
+          const next = event.target.value
+          if (next !== "" && !/^\d*$/.test(next)) return
+          setDraft(next)
+          if (next === "") return
+          onChange(Number(next))
+        }}
+        onBlur={(event) => {
+          commit(event.currentTarget.value)
+          setFocused(false)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault()
+            commit(event.currentTarget.value)
+            event.currentTarget.blur()
+          }
+        }}
       />
     </div>
   )

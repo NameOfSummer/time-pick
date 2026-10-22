@@ -16,14 +16,15 @@ function listAvailableStarts_(durationMin) {
   var settings = getSettings_();
   var tz = settings.timezone || 'Asia/Tokyo';
   var now = new Date();
+  var maxDays = settings.maxDaysAhead || 28;
   var windowStart = addMinutes_(now, settings.minNoticeMin || 0);
-  var windowEnd = addMinutes_(now, (settings.maxDaysAhead || 28) * 24 * 60);
+  var windowEnd = addMinutes_(now, maxDays * 24 * 60);
   var busy = getBusyBlocks_(settings, windowStart, windowEnd);
   var starts = [];
   var ymd = ymdInTz_(windowStart, tz);
   var endYmd = ymdInTz_(windowEnd, tz);
   var guard = 0;
-  while (ymd <= endYmd && guard < 100) {
+  while (ymd <= endYmd && guard < maxDays + 3) {
     guard++;
     var parts = ymd.split('-').map(Number);
     var weekday = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0)).getUTCDay();
@@ -140,25 +141,32 @@ function queryBusy_(calendarIds, windowStart, windowEnd) {
 }
 
 /**
- * FreeBusy API で予定を取る。
+ * FreeBusy API で予定を取る。長い期間は分けて問い合わせる。
  * @param calendarIds カレンダー。
  * @param windowStart 期間の始まり。
  * @param windowEnd 期間の終わり。
  * @returns 予定の開始と終了。
  */
 function queryFreeBusy_(calendarIds, windowStart, windowEnd) {
-  var res = Calendar.Freebusy.query({
-    timeMin: windowStart.toISOString(),
-    timeMax: windowEnd.toISOString(),
-    items: calendarIds.map(function (id) { return { id: id }; }),
-  });
   var busy = [];
-  var calendars = res.calendars || {};
-  Object.keys(calendars).forEach(function (id) {
-    (calendars[id].busy || []).forEach(function (block) {
-      busy.push({ start: new Date(block.start), end: new Date(block.end) });
+  var items = calendarIds.map(function (id) { return { id: id }; });
+  var chunkMs = 80 * 24 * 60 * 60 * 1000;
+  var cursor = new Date(windowStart.getTime());
+  while (cursor.getTime() < windowEnd.getTime()) {
+    var chunkEnd = new Date(Math.min(cursor.getTime() + chunkMs, windowEnd.getTime()));
+    var res = Calendar.Freebusy.query({
+      timeMin: cursor.toISOString(),
+      timeMax: chunkEnd.toISOString(),
+      items: items,
     });
-  });
+    var calendars = res.calendars || {};
+    Object.keys(calendars).forEach(function (id) {
+      (calendars[id].busy || []).forEach(function (block) {
+        busy.push({ start: new Date(block.start), end: new Date(block.end) });
+      });
+    });
+    cursor = chunkEnd;
+  }
   return busy;
 }
 
